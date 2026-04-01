@@ -1,0 +1,190 @@
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+// Node structure for Money Stack (Linked List)
+struct MoneyBundle {
+    string serialNumber;
+    string currencyType;
+    int billCounts[3]; // [0] -> 100s, [1] -> 50s, [2] -> 20s
+    MoneyBundle* next;
+};
+
+// Data structure for Customer
+struct Customer {
+    string customerName;
+    string transactionType;
+};
+
+// Stack implementation using Linked List
+class MoneyStack {
+private:
+    MoneyBundle* top;
+
+public:
+    MoneyStack() {
+        top = nullptr;
+    }
+
+    ~MoneyStack() {
+        while (!isEmpty()) {
+            MoneyBundle* temp = pop();
+            delete temp;
+        }
+    }
+
+    bool isEmpty() {
+        return top == nullptr;
+    }
+
+    void push(string serial, string currency, int count100, int count50, int count20) {
+        MoneyBundle* newBundle = new MoneyBundle();
+        newBundle->serialNumber = serial;
+        newBundle->currencyType = currency;
+        newBundle->billCounts[0] = count100;
+        newBundle->billCounts[1] = count50;
+        newBundle->billCounts[2] = count20;
+        newBundle->next = top;
+        
+        top = newBundle;
+    }
+
+    MoneyBundle* pop() {
+        if (isEmpty()) {
+            return nullptr;
+        }
+        MoneyBundle* temp = top;
+        top = top->next;
+        return temp;
+    }
+
+    void display() {
+        if (isEmpty()) {
+            cout << "[Safe] Money safe is currently empty.\n";
+            return;
+        }
+        cout << "\n--- Money Bundles in Safe (Top to Bottom) ---\n";
+        MoneyBundle* current = top;
+        while (current != nullptr) {
+            cout << "Serial: " << current->serialNumber 
+                 << " | Currency: " << current->currencyType 
+                 << " | Bills (100s, 50s, 20s): [" 
+                 << current->billCounts[0] << ", " 
+                 << current->billCounts[1] << ", " 
+                 << current->billCounts[2] << "]\n";
+            current = current->next;
+        }
+        cout << "---------------------------------------------\n";
+    }
+};
+
+// Circular Queue implementation using Fixed-Size Array
+class CustomerQueue {
+private:
+    static const int SIZE = 5;
+    Customer customers[SIZE];
+    int front;
+    int rear;
+    int count;
+
+public:
+    CustomerQueue() {
+        front = 0;
+        rear = -1;
+        count = 0;
+    }
+
+    bool isFull() {
+        return count == SIZE;
+    }
+
+    bool isEmpty() {
+        return count == 0;
+    }
+
+    void enqueue(string name, string type) {
+        if (isFull()) {
+            cout << "[Queue] Queue is full! Cannot add customer: " << name << "\n";
+            return;
+        }
+        rear = (rear + 1) % SIZE;
+        customers[rear].customerName = name;
+        customers[rear].transactionType = type;
+        count++;
+    }
+
+    bool dequeue(Customer& servedCustomer) {
+        if (isEmpty()) {
+            return false;
+        }
+        servedCustomer = customers[front];
+        front = (front + 1) % SIZE;
+        count--;
+        return true;
+    }
+
+    void display() {
+        if (isEmpty()) {
+            cout << "[Queue] Customer queue is currently empty.\n";
+            return;
+        }
+        cout << "\n--- Waiting Customers ---\n";
+        for (int i = 0; i < count; i++) {
+            int index = (front + i) % SIZE;
+            cout << i + 1 << ". Name: " << customers[index].customerName 
+                 << " | Transaction: " << customers[index].transactionType << "\n";
+        }
+        cout << "-------------------------\n";
+    }
+};
+
+// Function to process the transaction (Pop & Dequeue)
+void processTransaction(MoneyStack& safe, CustomerQueue& queue) {
+    if (queue.isEmpty()) {
+        cout << "\n[Process] No customers waiting in the queue.\n";
+        return;
+    }
+    if (safe.isEmpty()) {
+        cout << "\n[Process] No money bundles in the safe to process the transaction.\n";
+        return;
+    }
+
+    Customer currentCustomer;
+    queue.dequeue(currentCustomer);
+    MoneyBundle* money = safe.pop();
+
+    cout << "\n*** Transaction Processed ***\n";
+    cout << "Customer Served: " << currentCustomer.customerName 
+         << " (" << currentCustomer.transactionType << ")\n";
+    cout << "Money Bundle Used: " << money->serialNumber 
+         << " (" << money->currencyType << ")\n";
+    cout << "*****************************\n";
+
+    delete money; 
+}
+
+int main() {
+    MoneyStack safe;
+    CustomerQueue queue;
+
+    safe.push("SN-9001", "TL", 10, 5, 2);
+    safe.push("SN-9002", "USD", 5, 0, 0);
+    safe.push("SN-9003", "EUR", 20, 10, 5);
+
+    queue.enqueue("Alice", "Withdraw");
+    queue.enqueue("Bob", "Deposit");
+    queue.enqueue("Charlie", "Withdraw");
+    queue.enqueue("David", "Withdraw");
+
+    safe.display();
+    queue.display();
+
+    processTransaction(safe, queue);
+    processTransaction(safe, queue);
+
+    safe.display();
+    queue.display();
+
+    return 0;
+}
